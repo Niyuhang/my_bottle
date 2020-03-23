@@ -23,6 +23,10 @@ class SingleTon:
             return instance
 
 
+class Rule:
+    ...
+
+
 class MyBottle(SingleTon):
 
     def __init__(self):
@@ -60,7 +64,12 @@ class MyBottle(SingleTon):
         :param current_path:
         :return: (bool, list)
         """
+
         return True, []
+
+    @staticmethod
+    def build_the_regex_pattern(path):
+        ...
 
     def route(self, path: str):
         """
@@ -101,3 +110,5 @@ class MyBottle(SingleTon):
         :return:
         """
         return self.wsgi_app(environ, start_response)
+
+
