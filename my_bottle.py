@@ -24,13 +24,43 @@ class SingleTon:
 
 
 class Rule:
-    ...
+
+    __slots__ = [
+        "url",
+        "endpoint",
+        "map"
+    ]
+
+    def __init__(self, url, endpoint):
+        self.url = url
+        self.endpoint = endpoint
+        self.map = None
+
+    def bind_map(self, map):
+        self._compile()
+        map.add_rule(self)
+
+    def _compile(self):
+        ...
+
+class Map:
+
+    __slots__ = [
+        "rules"
+    ]
+
+    def __init__(self):
+        self.rules = []
+
+    def add_rule(self, rule):
+        self.rules.append(rule)
 
 
 class MyBottle(SingleTon):
 
     def __init__(self):
-        self.routes = []
+        self.view_funcs = {}
+        self.maps = Map()
 
     def wsgi_app(self, environ, start_response):
         # 分发到对应的路由 并且得到结果
@@ -48,13 +78,13 @@ class MyBottle(SingleTon):
         分发请求到对应函数并且执行
         """
         current_path = environ.get("PATH_INFO")
-        for path in self.routes:
+        for endpoint, path in self.view_funcs.items():
             match_res, values = self.match(path["path"], current_path)
             if match_res:
                 res = path["func"](*values)
                 return res
         else:
-            return "没找到"
+            return "not found"
 
     @staticmethod
     def match(path: str, current_path: str) -> (bool, list):
@@ -86,14 +116,18 @@ class MyBottle(SingleTon):
 
         return decorate
 
-    def add_url_for_app(self, path: str, f):
+    def add_url_for_app(self, path: str, f, endpoint=None):
         """
         给app增加路由
         :param path:
         :param f:
         :return:
         """
-        self.routes.append({"path": path, "func": f})
+        if not endpoint:
+            endpoint = f.__name__
+        self.view_funcs[endpoint] = f
+        rule = Rule(path, endpoint)
+        rule.bind_map(self.maps)
 
     def run_server_forever(self, host="", port=None):
         port = port or 8080
